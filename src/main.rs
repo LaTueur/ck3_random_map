@@ -4,12 +4,13 @@ use std::cmp;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use rand::thread_rng;
-//use std::time::SystemTime;
+use std::time::SystemTime;
 
 const NUM_OF_COLORS:u32 = (255 as u32).pow(3);
 const LAND_MAP: &str = "mod/plain.png";
 const PROVINCE_GRID_SIZE:u32 = 30;
 
+#[derive(PartialEq)]
 struct Coords{x: u32, y: u32}
 impl Coords{
     fn simple_distance(&self, other: &Coords) -> u32{
@@ -30,6 +31,7 @@ impl NumToColor for u32{
 }
 
 fn main() {
+    let start_time = SystemTime::now();
     let mut map = im::open(LAND_MAP).unwrap().into_rgb8();
     let (width, height) = (map.width(), map.height());
     let mut colors: Vec<u32> = (0..NUM_OF_COLORS).collect();
@@ -48,9 +50,10 @@ fn main() {
     for x in 0..width{
         for y in 0..height{
             let coords = Coords{x, y};
-            provinces.sort_by(|a, b| coords.multi_distance(&a[0], &a[1])
-                    .cmp(&coords.multi_distance(&b[0], &b[1])));
-            provinces[0].push(coords);
+            provinces.iter_mut().min_by(|a, b|
+                coords.multi_distance(&a[0], &a[1])
+                .cmp(&coords.multi_distance(&b[0], &b[1])
+            )).unwrap().push(coords);
         }
     }
     for i in 0..provinces.len(){
@@ -60,4 +63,5 @@ fn main() {
         }
     }
     map.save("test.png").unwrap();
+    println!("{}", SystemTime::now().duration_since(start_time).unwrap().as_millis().to_string());
 }
