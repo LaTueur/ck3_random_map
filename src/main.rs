@@ -80,7 +80,7 @@ fn main() {
         let coords = i.as_coords(width);
         provinces.iter_mut().min_by(|a, b|
             coords.multi_distance(&a[0..4])
-            .cmp(&coords.multi_distance(&b[0..4]))
+            .partial_cmp(&coords.multi_distance(&b[0..4])).unwrap()
         ).unwrap().push(coords);
     }
     for x in 0..width{
