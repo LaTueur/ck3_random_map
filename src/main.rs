@@ -1,6 +1,5 @@
 extern crate image as im;
 
-use std::cmp;
 use rand::seq::SliceRandom;
 //use rand::Rng;
 use rand::thread_rng;
@@ -8,6 +7,11 @@ use std::time::SystemTime;
 use std::path::Path;
 use std::fs;
 use std::io::Write;
+
+mod coords;
+use coords::Coords;
+mod numastype;
+use numastype::NumAsType;
 
 const NUM_OF_COLORS:u32 = (255 as u32).pow(3);
 const LAND_MAP: &str = "from/heightmap.png";
@@ -18,33 +22,6 @@ const WHITE:im::Rgb<u8> = im::Rgb([255, 255, 255]);
 const PINK:im::Rgb<u8> = im::Rgb([255, 0, 128]);
 const FOLDERS:[&str; 2] = ["map_data", "common/landed_titles"];
 const ROOT_FOLDER:&str = "mod";
-
-#[derive(PartialEq, Clone, Copy)]
-struct Coords{x: u32, y: u32}
-impl Coords{
-    fn simple_distance(&self, other: &Coords) -> u32{
-        (cmp::max(self.x, other.x) - cmp::min(self.x, other.x))+(cmp::max(self.y, other.y) - cmp::min(self.y, other.y))
-    }
-    fn multi_distance(self: &Coords, coord2: &Coords, coord3: &Coords) -> u32{
-        self.simple_distance(coord2) * self.simple_distance(coord3)
-    }
-    fn as_index(&self, width: u32) -> u32{
-        self.x + self.y*width
-    }
-}
-
-trait NumAsType{
-    fn as_rgb8(&self) -> im::Rgb<u8>;
-    fn as_coords(&self, width: u32) -> Coords;
-}
-impl NumAsType for u32{
-    fn as_rgb8(&self) -> im::Rgb<u8>{
-        im::Rgb([(self%255) as u8, (self/255%255) as u8, (self/255/255) as u8])
-    }
-    fn as_coords(&self, width: u32) -> Coords{
-        Coords{x: self%width, y: self/width}
-    }
-}
 
 fn main() {
     let start_time = SystemTime::now();
