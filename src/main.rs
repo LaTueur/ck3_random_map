@@ -72,15 +72,15 @@ fn main() {
                 }
             }
             if valid_pixels.len() > 1{
-                provinces.push(vec!(*valid_pixels.choose(&mut rng).unwrap(), *valid_pixels.choose(&mut rng).unwrap()));
+                provinces.push(vec!(*valid_pixels.choose(&mut rng).unwrap(), *valid_pixels.choose(&mut rng).unwrap(), *valid_pixels.choose(&mut rng).unwrap(), *valid_pixels.choose(&mut rng).unwrap()));
             }
         }
     }
     for i in land_pixels{
         let coords = i.as_coords(width);
         provinces.iter_mut().min_by(|a, b|
-            coords.multi_distance(&a[0], &a[1])
-            .cmp(&coords.multi_distance(&b[0], &b[1]))
+            coords.multi_distance(&a[0..4])
+            .cmp(&coords.multi_distance(&b[0..4]))
         ).unwrap().push(coords);
     }
     for x in 0..width{
