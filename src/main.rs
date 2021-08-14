@@ -8,15 +8,16 @@ use std::path::Path;
 use std::fs;
 use std::io::Write;
 
-mod coords;
-use coords::Coords;
+mod grid;
+use grid::Grid;
+use grid::GridVector;
 mod numastype;
 use numastype::NumAsType;
 
 const NUM_OF_COLORS:u32 = (255 as u32).pow(3);
-const LAND_MAP: &str = "from/heightmap.png";
-const PROVINCE_GRID_SIZE:u32 = 30;
-const LAND_COLOR: u8 = 0;
+const LAND_MAP: &str = "from/big_plain.png";
+const PROVINCE_GRID_SIZE:u32 = 32;
+const LAND_COLOR: u8 = 10;
 const BLACK:im::Rgb<u8> = im::Rgb([0, 0, 0]);
 const WHITE:im::Rgb<u8> = im::Rgb([255, 255, 255]);
 const PINK:im::Rgb<u8> = im::Rgb([255, 0, 128]);
@@ -30,9 +31,7 @@ fn main() {
     let mut colors: Vec<u32> = (0..NUM_OF_COLORS).collect();
     let mut rng = thread_rng();
     colors.shuffle(&mut rng);
-    let mut provinces: Vec<Vec<Coords>> = vec!();
     let mut map_pixels: Vec<bool> = vec!();
-    let mut land_pixels: Vec<u32> = vec!();
     let mut pixel_count: u32 = 0;
     for i in FOLDERS.iter(){
         let path = Path::new(ROOT_FOLDER).join(Path::new(i));
@@ -42,7 +41,6 @@ fn main() {
     for pixel in map.pixels(){
         if pixel[0] > LAND_COLOR{
             map_pixels.push(true);
-            land_pixels.push(pixel_count);
         }
         else{
             map_pixels.push(false);
@@ -59,30 +57,8 @@ fn main() {
         }
     }
     map.save("mod/map_data/rivers.png").unwrap();
-    for base_x in 0..width/PROVINCE_GRID_SIZE{
-        for base_y in 0..height/PROVINCE_GRID_SIZE{
-            let mut valid_pixels:Vec<Coords> = vec!();
-            for x in 0..PROVINCE_GRID_SIZE{
-                for y in 0..PROVINCE_GRID_SIZE{
-                    let coords = Coords{x: x+base_x*PROVINCE_GRID_SIZE, y: y+base_y*PROVINCE_GRID_SIZE};
-                    let index = coords.as_index(width);
-                    if map_pixels[index as usize]{
-                        valid_pixels.push(coords);
-                    }
-                }
-            }
-            if valid_pixels.len() > 1{
-                provinces.push(vec!(*valid_pixels.choose(&mut rng).unwrap(), *valid_pixels.choose(&mut rng).unwrap(), *valid_pixels.choose(&mut rng).unwrap(), *valid_pixels.choose(&mut rng).unwrap()));
-            }
-        }
-    }
-    for i in land_pixels{
-        let coords = i.as_coords(width);
-        provinces.iter_mut().min_by(|a, b|
-            coords.multi_distance(&a[0..4])
-            .partial_cmp(&coords.multi_distance(&b[0..4])).unwrap()
-        ).unwrap().push(coords);
-    }
+    let mut grids = Vec::<Grid>::collect_grids(width, height, &map_pixels, &colors);
+    grids.pixels_to_provinces(width);
     for x in 0..width{
         for y in 0..height{
             map.put_pixel(x, y, BLACK);
@@ -90,21 +66,21 @@ fn main() {
     }
     let mut definition = String::from("0;0;0;0;x;x;\n");
     let mut titles = String::from("e_test = { color = { 0 0 0 } color2 = { 255 255 255 } capital = c_test_1 k_test = { color = { 0 0 0 } color2 = { 255 255 255 \n");
-    for i in 0..provinces.len(){
-        let color = colors[i].as_rgb8();
-        let index = i+1;
+    for grid in grids.iter(){
+        let color = grid.color;
+        let index = grid.index+1;
         definition.push_str(&format!("{index};{};{};{};b_test_{index};x;\n", color[0], color[1], color[2], index=index));
-        if i%3 == 0{
-            if i != 0{
+        if grid.index%3 == 0{
+            if grid.index != 0{
                 titles.push_str(&"}");
             }
-            if i/3%3 == 0{
+            if grid.index/3%3 == 0{
                 titles.push_str(&format!(" }} \n d_test_{index} = {{ color = {{ {} {} {} }} color2 = {{ 255 255 255 }} capital = c_test_{index}\n", color[0], color[1], color[2], index=index));
             }
             titles.push_str(&format!("c_test_{index} = {{ color = {{ {} {} {} }} color2 = {{ 255 255 255 }}\n", color[0], color[1], color[2], index=index));
         }
         titles.push_str(&format!("b_test_{index} = {{ province = {index} color = {{ {} {} {} }} color2 = {{ 255 255 255 }} }}\n", color[0], color[1], color[2], index=index));
-        for coords in provinces[i].iter(){
+        for coords in grid.province_pixels.iter(){
             map.put_pixel(coords.x, coords.y, color);
         }
     }

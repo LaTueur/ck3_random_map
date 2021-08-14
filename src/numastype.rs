@@ -1,4 +1,4 @@
-use crate::coords::Coords;
+use crate::grid::Coords;
 
 pub trait NumAsType{
     fn as_rgb8(&self) -> im::Rgb<u8>;
