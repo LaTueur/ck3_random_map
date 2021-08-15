@@ -3,6 +3,7 @@ use crate::{BLACK, PROVINCE_GRID_SIZE};
 use crate::numastype::NumAsType;
 use rand::thread_rng;
 use rand::seq::SliceRandom;
+use rand::Rng;
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct Coords{pub x: u32, pub y: u32}
@@ -48,8 +49,8 @@ impl Grid{
     pub fn get_neighbours(&self, width: u32, grids: &Vec<Grid>) -> Vec<usize>{
         let mut neighbours: Vec<usize> = vec!();
         for x in 0..5{
-            for y in 0..5{
-                let index = (y - 2)*width as i32 +(x - 2)+self.index as i32;
+            for y in 0..3{
+                let index = (y - 1)*width as i32 +(x - 2)+self.index as i32;
                 if index < 0 || index as usize >= grids.len(){
                     continue
                 }
@@ -72,18 +73,23 @@ impl GridVector for Vec::<Grid>{
         let mut rng = thread_rng();
         let mut grids: Vec<Grid> = vec!();
         for base_y in 0..height/PROVINCE_GRID_SIZE{
-            for base_x in 0..width/PROVINCE_GRID_SIZE{
+            let offset = rng.gen_range(0..PROVINCE_GRID_SIZE) as i64;
+            for base_x in 0..width/PROVINCE_GRID_SIZE+1{
                 let mut land_pixels:Vec<Coords> = vec!();
-                for y in 0..PROVINCE_GRID_SIZE{
-                    for x in 0..PROVINCE_GRID_SIZE{
-                        let coords = Coords{x: x+base_x*PROVINCE_GRID_SIZE, y: y+base_y*PROVINCE_GRID_SIZE as u32};
+                for x in 0..PROVINCE_GRID_SIZE{
+                    let coord_x = (x+base_x*PROVINCE_GRID_SIZE) as i64 - offset;
+                    if coord_x < 0 || coord_x >= width as i64{
+                        continue
+                    }
+                    for y in 0..PROVINCE_GRID_SIZE{
+                        let coords = Coords{x: coord_x as u32, y: y+base_y*PROVINCE_GRID_SIZE as u32};
                         let index = coords.as_index(width);
                         if map_pixels[index as usize]{
                             land_pixels.push(coords);
                         }
                     }
                 }
-                let index = Coords::new(base_x, base_y).as_index(width/PROVINCE_GRID_SIZE);
+                let index = Coords::new(base_x, base_y).as_index(width/PROVINCE_GRID_SIZE+1);
                 if land_pixels.len() > 1{
                     grids.push(Grid::new(
                         vec!(*land_pixels.choose(&mut rng).unwrap(), *land_pixels.choose(&mut rng).unwrap(), *land_pixels.choose(&mut rng).unwrap(), *land_pixels.choose(&mut rng).unwrap()),
@@ -105,7 +111,7 @@ impl GridVector for Vec::<Grid>{
                 continue
             }
             let grid = self[i].clone();
-            let neighbours = grid.get_neighbours(width/PROVINCE_GRID_SIZE, &self);
+            let neighbours = grid.get_neighbours(width/PROVINCE_GRID_SIZE+1, &self);
             if neighbours.len() == 0{
                 continue
             }
