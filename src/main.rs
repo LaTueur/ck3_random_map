@@ -13,11 +13,12 @@ use grid::Grid;
 use grid::GridVector;
 mod numastype;
 use numastype::NumAsType;
+mod noise;
 
 const NUM_OF_COLORS:u32 = (255 as u32).pow(3);
-const LAND_MAP: &str = "from/big_plain.png";
+const LAND_MAP: &str = "example_images/noise.png";
 const PROVINCE_GRID_SIZE:u32 = 32;
-const LAND_COLOR: u8 = 10;
+const LAND_COLOR: u8 = 15;
 const BLACK:im::Rgb<u8> = im::Rgb([0, 0, 0]);
 const WHITE:im::Rgb<u8> = im::Rgb([255, 255, 255]);
 const PINK:im::Rgb<u8> = im::Rgb([255, 0, 128]);
@@ -26,7 +27,8 @@ const ROOT_FOLDER:&str = "mod";
 
 fn main() {
     let start_time = SystemTime::now();
-    let mut map = im::open(LAND_MAP).unwrap().into_rgb8();
+    let mut map = noise::generate_noise_map(8192, 4096, 3, 5.0, 0.25, 2.0, 0.0, 125);
+    //let mut map = im::open(LAND_MAP).unwrap().into_rgb8();
     let (width, height) = (map.width(), map.height());
     let mut colors: Vec<u32> = (0..NUM_OF_COLORS).collect();
     let mut rng = thread_rng();
