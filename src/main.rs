@@ -67,6 +67,9 @@ fn main() {
     let mut definition = String::from("0;0;0;0;x;x;\n");
     let mut titles = String::from("e_test = { color = { 0 0 0 } color2 = { 255 255 255 } capital = c_test_1 k_test = { color = { 0 0 0 } color2 = { 255 255 255 \n");
     for grid in grids.iter(){
+        if grid.province_pixels.len() == 0{
+            continue
+        }
         let color = grid.color;
         let index = grid.index+1;
         definition.push_str(&format!("{index};{};{};{};b_test_{index};x;\n", color[0], color[1], color[2], index=index));
