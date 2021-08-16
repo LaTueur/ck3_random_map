@@ -240,10 +240,9 @@ dependencies = [
 [[package]]
 name = "noise"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82051dd6745d5184c6efb7bc8be14892a7f6d4f3ad6dbf754d1c7d7d5fe24b43"
+source = "git+https://github.com/Razaekel/noise-rs?rev=20f71e1#20f71e123f8fc18b86116037a373f093d63bb1fb"
 dependencies = [
- "image",
+ "num-traits",
  "rand 0.7.3",
  "rand_xorshift",
 ]
