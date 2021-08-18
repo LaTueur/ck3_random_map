@@ -6,7 +6,6 @@ use rand::thread_rng;
 use std::time::SystemTime;
 use std::path::Path;
 use std::fs;
-use std::io::Write;
 
 mod grid;
 use grid::Grid;
@@ -68,7 +67,7 @@ fn main() {
             map.put_pixel(coords.x, coords.y, PINK);
         }
     }
-    map.save("mod/map_data/rivers.png").unwrap();
+    //map.save("mod/map_data/rivers.png").unwrap();
     let mut grids = Vec::<Grid>::collect_grids(width, height, &map_pixels, &colors);
     grids.pixels_to_provinces(width);
     for x in 0..width{
@@ -76,42 +75,8 @@ fn main() {
             map.put_pixel(x, y, BLACK);
         }
     }
-    let mut definition = String::from("0;0;0;0;x;x;\n");
-    let mut titles = String::from("e_test = { color = { 0 0 0 } color2 = { 255 255 255 } capital = c_test_1 k_test = { color = { 0 0 0 } color2 = { 255 255 255 \n");
-    let mut province_terrain = String::from("default=plains\n");
-    let mut index = 0;
-    for grid in grids.iter(){
-        if grid.province_pixels.len() == 0{
-            continue
-        }
-        let color = grid.color;
-        index += 1;
-        let small_index = index - 1;
-        definition.push_str(&format!("{index};{};{};{};b_test_{index};x;\n", color[0], color[1], color[2], index=index));
-        if small_index%3 == 0{
-            if small_index != 0{
-                titles.push_str(&"}");
-            }
-            if small_index/3%3 == 0{
-                titles.push_str(&format!(" }} \n d_test_{index} = {{ color = {{ {} {} {} }} color2 = {{ 255 255 255 }} capital = c_test_{index}\n", color[0], color[1], color[2], index=index));
-            }
-            titles.push_str(&format!("c_test_{index} = {{ color = {{ {} {} {} }} color2 = {{ 255 255 255 }}\n", color[0], color[1], color[2], index=index));
-        }
-        titles.push_str(&format!("b_test_{index} = {{ province = {index} color = {{ {} {} {} }} color2 = {{ 255 255 255 }} }}\n", color[0], color[1], color[2], index=index));
-        let terrain = grid.most_common_terrain(width, &terrain_map);
-        province_terrain.push_str(&format!("{index} = {}\n", terrain.to_string().to_lowercase(), index=index));
-        for coords in grid.province_pixels.iter(){
-            map.put_pixel(coords.x, coords.y, color);
-        }
-    }
-    titles.push_str(&"} } } }");
-    map.save("mod/map_data/provinces.png").unwrap();
-    let mut file = fs::File::create("mod/map_data/definition.csv").unwrap();
-    file.write_all(definition.as_bytes()).unwrap();
-    let mut file = fs::File::create("mod/common/landed_titles/00_landed_titles.txt").unwrap();
-    file.write_all(titles.as_bytes()).unwrap();
-    let mut file = fs::File::create("mod/common/province_terrain/00_province_terrain.txt").unwrap();
-    file.write_all(province_terrain.as_bytes()).unwrap();
+    
+    grids.save_to_files(width, &mut map, &terrain_map);
 
     println!("{}", SystemTime::now().duration_since(start_time).unwrap().as_millis().to_string());
 }
