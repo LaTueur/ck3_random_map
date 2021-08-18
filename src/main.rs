@@ -50,6 +50,7 @@ fn main() {
     moisture_map.save("mod/map_data/moisturemap.png").unwrap();
     temperature_map.save("mod/map_data/temperaturemap.png").unwrap();
     terrain_map.to_image(width).save("mod/map_data/terrainmap.png").unwrap();
+    terrain_map.generate_gfx(width);
     for pixel in height_map.pixels(){
         if pixel[0] > LAND_COLOR{
             map_pixels.push(true);
