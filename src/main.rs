@@ -18,7 +18,7 @@ mod noise;
 const NUM_OF_COLORS:u32 = (255 as u32).pow(3);
 const LAND_MAP: &str = "from/random.png";
 const PROVINCE_GRID_SIZE:u32 = 64;
-const LAND_COLOR: u8 = 28;
+const LAND_COLOR: u16 = 4096;
 const BLACK:im::Rgb<u8> = im::Rgb([0, 0, 0]);
 const WHITE:im::Rgb<u8> = im::Rgb([255, 255, 255]);
 const PINK:im::Rgb<u8> = im::Rgb([255, 0, 128]);
@@ -27,9 +27,9 @@ const ROOT_FOLDER:&str = "mod";
 
 fn main() {
     let start_time = SystemTime::now();
-    let mut map = noise::generate_noise_map(8192, 4096, 7, 2.12323, 0.5, 0.5, 3.0, -0.3, 92);
-    //let mut map = im::open(LAND_MAP).unwrap().into_rgb8();
-    let (width, height) = (map.width(), map.height());
+    let height_map = noise::generate_noise_map(8192, 4096, 7, 2.12323, 0.5, 0.5, 3.0, -0.3, 10.0, 92);
+    //let height_map = im::open(LAND_MAP).unwrap().into_luma16();
+    let (width, height) = (height_map.width(), height_map.height());
     let mut colors: Vec<u32> = (0..NUM_OF_COLORS).collect();
     let mut rng = thread_rng();
     colors.shuffle(&mut rng);
@@ -39,8 +39,8 @@ fn main() {
         let path = Path::new(ROOT_FOLDER).join(Path::new(i));
         fs::create_dir_all(path).unwrap();
     }
-    map.save("mod/map_data/heightmap.png").unwrap();
-    for pixel in map.pixels(){
+    height_map.save("mod/map_data/heightmap.png").unwrap();
+    for pixel in height_map.pixels(){
         if pixel[0] > LAND_COLOR{
             map_pixels.push(true);
         }
@@ -49,6 +49,7 @@ fn main() {
         }
         pixel_count += 1;
     }
+    let mut map: im::RgbImage = im::ImageBuffer::new(width, height);
     for pixel in 0..pixel_count{
         let coords = pixel.as_coords(width);
         if map_pixels[pixel as usize]{

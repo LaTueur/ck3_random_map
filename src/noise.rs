@@ -1,6 +1,6 @@
 use noise::{utils::PlaneMapBuilder, utils::NoiseMapBuilder, MultiFractal, Fbm};
 
-pub fn generate_noise_map(width: u32, height: u32, octaves: usize, lacunarity: f64, persistance: f64, frequency: f64, scale: f64, sea_level: f64, seed: u32) -> im::RgbImage{
+pub fn generate_noise_map(width: u32, height: u32, octaves: usize, lacunarity: f64, persistance: f64, frequency: f64, scale: f64, sea_level: f64, divider: f64, seed: u32) -> im::ImageBuffer<im::Luma<u16>, Vec<u16>>{
     let fbm = Fbm::new(seed)
         .set_frequency(frequency)
         .set_persistence(persistance)
@@ -13,15 +13,15 @@ pub fn generate_noise_map(width: u32, height: u32, octaves: usize, lacunarity: f
         .set_y_bounds(0.0, scale)
         .build();
     
-    let mut image: im::RgbImage = im::ImageBuffer::new(width, height);
-    let multiplier = 255.0 * (1.0 - sea_level) / 5.0;
+    let mut image: im::ImageBuffer<im::Luma<u16>, Vec<u16>> = im::ImageBuffer::new(width, height);
+    let multiplier = 65535.0 * (1.0 - sea_level) / divider;
     for y in 0..height{
         for x in 0..width{
             let mut value = result.get_value(x as usize, y as usize);
             if value < sea_level{
                 value = sea_level;
             }
-            let color = im::Rgb([((value - sea_level) * multiplier).round() as u8; 3]);
+            let color = im::Luma([((value - sea_level) * multiplier).round() as u16]);
             image.put_pixel(x, y, color);
         }
     }
