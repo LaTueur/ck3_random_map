@@ -19,7 +19,7 @@ use crate::terrain::*;
 const NUM_OF_COLORS:u32 = (255 as u32).pow(3);
 const LAND_MAP: &str = "from/random.png";
 const PROVINCE_GRID_SIZE:u32 = 64;
-const LAND_COLOR: u16 = 4096;
+const LAND_COLOR: u16 = 4352;
 const BLACK:im::Rgb<u8> = im::Rgb([0, 0, 0]);
 const WHITE:im::Rgb<u8> = im::Rgb([255, 255, 255]);
 const PINK:im::Rgb<u8> = im::Rgb([255, 0, 128]);
