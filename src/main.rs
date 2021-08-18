@@ -23,7 +23,9 @@ const LAND_COLOR: u16 = 4352;
 const BLACK:im::Rgb<u8> = im::Rgb([0, 0, 0]);
 const WHITE:im::Rgb<u8> = im::Rgb([255, 255, 255]);
 const PINK:im::Rgb<u8> = im::Rgb([255, 0, 128]);
-const FOLDERS:[&str; 3] = ["map_data", "common/landed_titles", "common/province_terrain"];
+const LAND_FLAT_COLOR:im::Rgb<u8> = im::Rgb([170, 160, 140]);
+const WATER_FLAT_COLOR:im::Rgb<u8> = im::Rgb([130, 130, 120]);
+const FOLDERS:[&str; 4] = ["map_data", "common/landed_titles", "common/province_terrain", "gfx/map/terrain"];
 const ROOT_FOLDER:&str = "mod";
 const SEED: u32 = 2897;
 
@@ -61,13 +63,13 @@ fn main() {
     for pixel in 0..pixel_count{
         let coords = pixel.as_coords(width);
         if map_pixels[pixel as usize]{
-            map.put_pixel(coords.x, coords.y, WHITE);
+            map.put_pixel(coords.x, coords.y, LAND_FLAT_COLOR);
         }
         else{
-            map.put_pixel(coords.x, coords.y, PINK);
+            map.put_pixel(coords.x, coords.y, WATER_FLAT_COLOR);
         }
     }
-    //map.save("mod/map_data/rivers.png").unwrap();
+    map.save("mod/gfx/map/terrain/flatmap.png").unwrap();
     let mut grids = Vec::<Grid>::collect_grids(width, height, &map_pixels, &colors);
     grids.pixels_to_provinces(width);
     for x in 0..width{
