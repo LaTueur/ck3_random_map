@@ -4,6 +4,7 @@ use crate::numastype::NumAsType;
 use rand::thread_rng;
 use rand::seq::SliceRandom;
 use rand::Rng;
+use crate::terrain::*;
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct Coords{pub x: u32, pub y: u32}
@@ -61,6 +62,17 @@ impl Grid{
             }
         }
         neighbours
+    }
+    pub fn most_common_terrain(&self, width: u32, terrain_map: &Vec<Terrain>) -> Terrain{
+        let mut terrains = vec!();
+        for pixel in self.province_pixels.iter(){
+            terrains.push(terrain_map[pixel.as_index(width) as usize]);
+        }
+        *collect_terrain_types().iter().max_by(
+            |a, b|
+            terrains.iter().filter(|&n| n == *a).count()
+            .cmp(&terrains.iter().filter(|&n| n == *b).count())
+        ).unwrap()
     }
 }
 
