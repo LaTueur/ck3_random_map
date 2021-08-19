@@ -106,6 +106,25 @@ impl Terrain{
         }
         likeliness
     }
+    pub fn all() -> Vec<Terrain>{
+        vec!(
+            Terrain::Mountains,
+            Terrain::DesertMountain,
+            Terrain::Hills,
+            Terrain::Jungle,
+            Terrain::Drylands,
+            Terrain::Desert,
+            //Terrain::Oasis,
+            //Terrain::Floodplains,
+            Terrain::Plains,
+            //Terrain::Farmlands,
+            Terrain::Forest,
+            Terrain::Wetlands,
+            Terrain::Steppe,
+            Terrain::Taiga,
+            Terrain::Ocean
+        )
+    }
 }
 impl std::fmt::Display for Terrain {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -167,13 +186,6 @@ impl TerrainVector for Vec::<Terrain>{
         let (width, height) = (height_map.width(), height_map.height());
         let mut map = vec!();
         let (elevation_value, moisture_value, temperature_value) = Vec::<Terrain>::calculate_map_values(height_map, moisture_map, temperature_map);
-        let terrains = collect_terrain_types();
-        println!("{:?}", elevation_value);
-        println!("{:?}", moisture_value);
-        println!("{:?}", temperature_value);
-        println!("{:?}", temperature_value.normalize_value(30482));
-        println!("{:?}", temperature_value.normalize_value(10222));
-        println!("{:?}", temperature_value.normalize_value(21815));
         
         for y in 0..height{
             for x in 0..width{
@@ -184,7 +196,7 @@ impl TerrainVector for Vec::<Terrain>{
                     continue
                 }
                 let normalized_values = [elevation_value.normalize_value(elevation), moisture_value.normalize_value(moisture), temperature_value.normalize_value(temperature)];
-                map.push(*terrains.iter().min_by(
+                map.push(*Terrain::all().iter().min_by(
                     |a, b|
                     a.calculate_likeliness(normalized_values)
                     .partial_cmp(&b.calculate_likeliness(normalized_values)).unwrap()
@@ -225,7 +237,7 @@ impl TerrainVector for Vec::<Terrain>{
     }
     fn generate_gfx(&self, width: u32){
         let height = self.len() as u32 / width;
-        let terrains = collect_terrain_types();
+        let terrains = Terrain::all();
         let mut images = vec!();
         for _terrain in terrains.iter(){
             let image: im::ImageBuffer<im::Luma<u8>, Vec<u8>> = im::ImageBuffer::new(width, height);
@@ -240,23 +252,4 @@ impl TerrainVector for Vec::<Terrain>{
             image.save("mod/gfx/map/terrain/".to_owned() + terrain.file()).unwrap();
         }
     }
-}
-pub fn collect_terrain_types() -> Vec<Terrain>{
-    vec!(
-        Terrain::Mountains,
-        Terrain::DesertMountain,
-        Terrain::Hills,
-        Terrain::Jungle,
-        Terrain::Drylands,
-        Terrain::Desert,
-        //Terrain::Oasis,
-        //Terrain::Floodplains,
-        Terrain::Plains,
-        //Terrain::Farmlands,
-        Terrain::Forest,
-        Terrain::Wetlands,
-        Terrain::Steppe,
-        Terrain::Taiga,
-        Terrain::Ocean
-    )
 }

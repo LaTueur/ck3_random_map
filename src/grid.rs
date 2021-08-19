@@ -4,7 +4,7 @@ use crate::numastype::NumAsType;
 use rand::thread_rng;
 use rand::seq::SliceRandom;
 use rand::Rng;
-use crate::terrain::*;
+use crate::terrain::Terrain;
 use std::fs;
 use std::io::Write;
 
@@ -70,7 +70,7 @@ impl Grid{
         for pixel in self.province_pixels.iter(){
             terrains.push(terrain_map[pixel.as_index(width) as usize]);
         }
-        *collect_terrain_types().iter().max_by(
+        *Terrain::all().iter().max_by(
             |a, b|
             terrains.iter().filter(|&n| n == *a).count()
             .cmp(&terrains.iter().filter(|&n| n == *b).count())
