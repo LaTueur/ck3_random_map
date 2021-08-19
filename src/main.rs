@@ -15,6 +15,7 @@ use numastype::NumAsType;
 mod noise;
 mod terrain;
 use crate::terrain::*;
+mod religion;
 
 const NUM_OF_COLORS:u32 = (255 as u32).pow(3);
 const LAND_MAP: &str = "from/random.png";
