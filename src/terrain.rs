@@ -125,10 +125,18 @@ impl Terrain{
             Terrain::Ocean
         )
     }
+    pub fn as_index(&self) -> usize{
+        Terrain::all().iter().position(|&x| x == *self).unwrap()
+    }
 }
 impl std::fmt::Display for Terrain {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        if self == &Terrain::DesertMountain{
+            write!(f, "{:?}", "Desert_Mountain")
+        }
+        else{
+            write!(f, "{:?}", self)
+        }
     }
 }
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -176,6 +184,7 @@ pub trait TerrainVector{
     fn calculate_map_values(height_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>,
         moisture_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>,
         temperature_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>) -> (MapValue, MapValue, MapValue);
+    fn sorted_terrains_colors(self, num: usize, normalized_values: [f64; 3]) -> (Vec<Terrain>, Vec<im::Luma<u8>>);
     fn to_image(&self, width: u32) -> im::RgbImage;
     fn generate_gfx(&self, width: u32);
 }
@@ -186,22 +195,31 @@ impl TerrainVector for Vec::<Terrain>{
         let (width, height) = (height_map.width(), height_map.height());
         let mut map = vec!();
         let (elevation_value, moisture_value, temperature_value) = Vec::<Terrain>::calculate_map_values(height_map, moisture_map, temperature_map);
-        
+        let mut images = vec!();
+        for _terrain in Terrain::all().iter(){
+            let image: im::ImageBuffer<im::Luma<u8>, Vec<u8>> = im::ImageBuffer::new(width, height);
+            images.push(image);
+        }
         for y in 0..height{
             for x in 0..width{
                 let (elevation, moisture, temperature) =
                     (height_map.get_pixel(x, y)[0], moisture_map.get_pixel(x, y)[0], temperature_map.get_pixel(x, y)[0]);
                 if elevation <= LAND_COLOR{
-                    map.push(Terrain::Ocean);
+                    let terrain = Terrain::Ocean;
+                    map.push(terrain);
+                    images[terrain.as_index()].put_pixel(x, y, LUMA_WHITE);
                     continue
                 }
                 let normalized_values = [elevation_value.normalize_value(elevation), moisture_value.normalize_value(moisture), temperature_value.normalize_value(temperature)];
-                map.push(*Terrain::all().iter().min_by(
-                    |a, b|
-                    a.calculate_likeliness(normalized_values)
-                    .partial_cmp(&b.calculate_likeliness(normalized_values)).unwrap()
-                ).unwrap());
+                let (terrains, colors) = Terrain::all().sorted_terrains_colors(3, normalized_values);
+                for (terrain, color) in izip!(terrains.iter(), colors){
+                    images[terrain.as_index()].put_pixel(x, y, color);
+                }
+                map.push(terrains[0]);
             }
+        }
+        for (terrain, image) in Terrain::all().iter().zip(images.iter()){
+            image.save("mod/gfx/map/terrain/".to_owned() + terrain.file()).unwrap();
         }
         map
     }
@@ -226,6 +244,24 @@ impl TerrainVector for Vec::<Terrain>{
         moisture_value.calculate_average();
         temperature_value.calculate_average();
         (elevation_value, moisture_value, temperature_value)
+    }
+    fn sorted_terrains_colors(mut self, num: usize, normalized_values: [f64; 3]) -> (Vec<Terrain>, Vec<im::Luma<u8>>){
+        self.sort_by(
+            |a, b|
+            a.calculate_likeliness(normalized_values)
+            .partial_cmp(&b.calculate_likeliness(normalized_values)).unwrap()
+        );
+        let (mut terrains, mut values, mut colors) = (vec!(), vec!(), vec!());
+        for i in 0..num{
+            terrains.push(self[i]);
+            values.push(self[i].calculate_likeliness(normalized_values));
+        }
+        let total_value: f64 = values.iter().sum();
+        let powered_total = total_value;
+        for value in values.iter(){
+            colors.push(im::Luma([((1.0-value/powered_total)*150.0).round() as u8]))
+        }
+        (terrains, colors)
     }
     fn to_image(&self, width: u32) -> im::RgbImage{
         let mut image = im::RgbImage::new(width, self.len() as u32/width);

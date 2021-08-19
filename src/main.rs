@@ -31,12 +31,11 @@ const SEED: u32 = 9787;
 
 fn main() {
     let start_time = SystemTime::now();
-    let height_map = noise::generate_noise_map(1024, 512, 7, 2.12323, 0.5, 1.0, 3.0, -0.3, 10.0, SEED);
+    let height_map = noise::generate_noise_map(1024, 512, 7, 2.12323, 0.5, 1.0, 3.0, -0.2, 5.0, SEED);
     //let height_map = im::open(LAND_MAP).unwrap().into_luma16();
     let (width, height) = (height_map.width(), height_map.height());
     let moisture_map = noise::generate_noise_map(width, height, 3, 2.02345, 0.5, 0.5, 3.0, -0.9, 3.5, SEED + 10);
     let temperature_map = noise::generate_noise_map(width, height, 3, 2.201348, 0.5, 0.5, 3.0, -0.9, 3.5, SEED + 15);
-    let terrain_map = Vec::<Terrain>::collect_terrain(&height_map, &moisture_map, &temperature_map);
     let mut colors: Vec<u32> = (0..NUM_OF_COLORS).collect();
     let mut rng = thread_rng();
     colors.shuffle(&mut rng);
@@ -49,8 +48,10 @@ fn main() {
     height_map.save("mod/map_data/heightmap.png").unwrap();
     moisture_map.save("mod/map_data/moisturemap.png").unwrap();
     temperature_map.save("mod/map_data/temperaturemap.png").unwrap();
+
+    let terrain_map = Vec::<Terrain>::collect_terrain(&height_map, &moisture_map, &temperature_map);
     terrain_map.to_image(width).save("mod/map_data/terrainmap.png").unwrap();
-    terrain_map.generate_gfx(width);
+
     for pixel in height_map.pixels(){
         if pixel[0] > LAND_COLOR{
             map_pixels.push(true);
