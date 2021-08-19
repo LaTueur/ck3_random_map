@@ -27,11 +27,11 @@ const LAND_FLAT_COLOR:im::Rgb<u8> = im::Rgb([170, 160, 140]);
 const WATER_FLAT_COLOR:im::Rgb<u8> = im::Rgb([130, 130, 120]);
 const FOLDERS:[&str; 4] = ["map_data", "common/landed_titles", "common/province_terrain", "gfx/map/terrain"];
 const ROOT_FOLDER:&str = "mod";
-const SEED: u32 = 2897;
+const SEED: u32 = 9787;
 
 fn main() {
     let start_time = SystemTime::now();
-    let height_map = noise::generate_noise_map(8192, 4096, 7, 2.12323, 0.5, 0.5, 3.0, -0.3, 10.0, SEED);
+    let height_map = noise::generate_noise_map(1024, 512, 7, 2.12323, 0.5, 1.0, 3.0, -0.3, 10.0, SEED);
     //let height_map = im::open(LAND_MAP).unwrap().into_luma16();
     let (width, height) = (height_map.width(), height_map.height());
     let moisture_map = noise::generate_noise_map(width, height, 3, 2.02345, 0.5, 0.5, 3.0, -0.9, 3.5, SEED + 10);

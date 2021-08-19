@@ -1,5 +1,6 @@
 use crate::numastype::NumAsType;
 use crate::{LAND_COLOR};
+use itertools::izip;
 
 const LUMA_WHITE: im::Luma<u8> = im::Luma([255]);
 
@@ -60,10 +61,92 @@ impl Terrain{
             Terrain::Ocean => "beach_02_mask.png"
         }
     }
+    fn biases(&self) -> [f64; 3]{
+        match self {
+            Terrain::Mountains => [0.9, 0.1, -0.1],
+            Terrain::DesertMountain => [0.7, -0.5, 0.5],
+            Terrain::Hills => [0.65, 0.1, -0.1],
+            Terrain::Jungle => [0.0, 0.8, 0.5],
+            Terrain::Drylands => [0.0, -0.1, 0.5],
+            Terrain::Desert => [0.0, -0.6, 0.6],
+            Terrain::Oasis => [0.0, 0.0, 0.0],
+            Terrain::Floodplains => [0.0, 0.0, 0.0],
+            Terrain::Plains => [-0.1, -0.2, 0.0],
+            Terrain::Farmlands => [0.0, 0.0, 0.0],
+            Terrain::Forest => [0.1, 0.1, -0.1],
+            Terrain::Wetlands => [-0.3, 0.6, -0.1],
+            Terrain::Steppe => [0.0, -0.2, -0.25],
+            Terrain::Taiga => [0.0, -0.1, -0.8],
+            Terrain::Ocean => [0.0, 0.0, 0.0]
+        }
+    }
+    fn weights(&self) -> [f64; 3]{
+        match self {
+            Terrain::Mountains => [0.8, 0.1, 0.1],
+            Terrain::DesertMountain => [0.7, 0.15, 0.15],
+            Terrain::Hills => [0.7, 0.15, 0.15],
+            Terrain::Jungle => [0.1, 0.5, 0.4],
+            Terrain::Drylands => [0.1, 0.5, 0.4],
+            Terrain::Desert => [0.1, 0.45, 0.45],
+            Terrain::Oasis => [0.0, 0.0, 0.0],
+            Terrain::Floodplains => [0.0, 0.0, 0.0],
+            Terrain::Plains => [0.1, 0.3, 0.4],
+            Terrain::Farmlands => [0.0, 0.0, 0.0],
+            Terrain::Forest => [0.1, 0.4, 0.3],
+            Terrain::Wetlands => [0.2, 0.6, 0.4],
+            Terrain::Steppe => [0.1, 0.3, 0.6],
+            Terrain::Taiga => [0.1, 0.2, 0.7],
+            Terrain::Ocean => [5.0, 5.0, 5.0]
+        }
+    }
+    pub fn calculate_likeliness(&self, values: [f64; 3]) -> f64{
+        let mut likeliness = 0.0;
+        for (value, bias, weight) in izip!(values, self.biases(), self.weights()){
+            likeliness += (value-bias).powf(2.0)*weight
+        }
+        likeliness
+    }
 }
 impl std::fmt::Display for Terrain {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub struct MapValue{total: u64, num: u32, max: u16, min: u16, average: u16}
+impl MapValue{
+    pub fn new() -> Self{
+        MapValue{
+            total: 0,
+            num: 0,
+            max: 0,
+            min: 65535,
+            average: 0
+        }
+    }
+    pub fn apply_value(&mut self, value: u16){
+        self.total += value as u64;
+        self.num += 1;
+        if value > self.max{
+            self.max = value;
+        }
+        else if value < self.min{
+            self.min = value;
+        }
+    }
+    pub fn calculate_average(&mut self){
+        self.average = (self.total / self.num as u64) as u16
+    }
+    pub fn normalize_value(&self, value: u16) -> f64{
+        if value > self.average{
+            (value-self.average) as f64/(self.max-self.average) as f64
+        }
+        else if value < self.average{
+            -((self.average-value) as f64/(self.average-self.min) as f64)
+        }
+        else{
+            0.0
+        }
     }
 }
 
@@ -71,6 +154,9 @@ pub trait TerrainVector{
     fn collect_terrain(height_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>,
         moisture_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>,
         temperature_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>) -> Self;
+    fn calculate_map_values(height_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>,
+        moisture_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>,
+        temperature_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>) -> (MapValue, MapValue, MapValue);
     fn to_image(&self, width: u32) -> im::RgbImage;
     fn generate_gfx(&self, width: u32);
 }
@@ -80,81 +166,54 @@ impl TerrainVector for Vec::<Terrain>{
         temperature_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>) -> Self{
         let (width, height) = (height_map.width(), height_map.height());
         let mut map = vec!();
+        let (elevation_value, moisture_value, temperature_value) = Vec::<Terrain>::calculate_map_values(height_map, moisture_map, temperature_map);
+        let terrains = collect_terrain_types();
+        println!("{:?}", elevation_value);
+        println!("{:?}", moisture_value);
+        println!("{:?}", temperature_value);
+        println!("{:?}", temperature_value.normalize_value(30482));
+        println!("{:?}", temperature_value.normalize_value(10222));
+        println!("{:?}", temperature_value.normalize_value(21815));
+        
         for y in 0..height{
             for x in 0..width{
                 let (elevation, moisture, temperature) =
                     (height_map.get_pixel(x, y)[0], moisture_map.get_pixel(x, y)[0], temperature_map.get_pixel(x, y)[0]);
-                let terrain = match elevation {
-                    0..=LAND_COLOR => Terrain::Ocean,
-                    0..=7000 => {
-                        match temperature{
-                            0..=8000 => {
-                                Terrain::Taiga
-                            }
-                            8001..=20000 => {
-                                match moisture{
-                                    0..=30000 => {
-                                        Terrain::Steppe
-                                    }
-                                    30001..=50000 => {
-                                        Terrain::Forest
-                                    }
-                                    _ => {
-                                        Terrain::Wetlands
-                                    }
-                                }
-                            }
-                            20001..=40000 => {
-                                match moisture{
-                                    0..=3000 => {
-                                        Terrain::Drylands
-                                    }
-                                    3001..=28000 | 29001..=32000=> {
-                                        Terrain::Plains
-                                    }
-                                    28001..=29000 => {
-                                        Terrain::Farmlands
-                                    }
-                                    32001..=50000 => {
-                                        Terrain::Forest
-                                    }
-                                    _ => {
-                                        Terrain::Wetlands
-                                    }
-                                }
-                            }
-                            _ => {
-                                match moisture{
-                                    0..=5000 => {
-                                        Terrain::Desert
-                                    }
-                                    5001..=40000 => {
-                                        Terrain::Drylands
-                                    }
-                                    _ =>{
-                                        Terrain::Jungle
-                                    }
-
-                                }
-                            }
-                        }
-                    }
-                    7001..=9000 => {
-                        Terrain::Hills
-                    }
-                    _ => {
-                        if moisture < 5000 && temperature > 40000{
-                            Terrain::DesertMountain
-                        }
-                        else{
-                            Terrain::Mountains
-                        }
-                    }
-                };
-                map.push(terrain);
+                if elevation <= LAND_COLOR{
+                    map.push(Terrain::Ocean);
+                    continue
+                }
+                let normalized_values = [elevation_value.normalize_value(elevation), moisture_value.normalize_value(moisture), temperature_value.normalize_value(temperature)];
+                map.push(*terrains.iter().min_by(
+                    |a, b|
+                    a.calculate_likeliness(normalized_values)
+                    .partial_cmp(&b.calculate_likeliness(normalized_values)).unwrap()
+                ).unwrap());
             }
         }
         map
+    }
+    fn calculate_map_values(height_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>,
+        moisture_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>,
+        temperature_map: &im::ImageBuffer<im::Luma<u16>, Vec<u16>>) -> (MapValue, MapValue, MapValue){
+        let (width, height) = (height_map.width(), height_map.height());
+        let (mut elevation_value, mut moisture_value, mut temperature_value) = (MapValue::new(), MapValue::new(), MapValue::new());
+        for y in 0..height{
+            for x in 0..width{
+                let (elevation, moisture, temperature) =
+                    (height_map.get_pixel(x, y)[0], moisture_map.get_pixel(x, y)[0], temperature_map.get_pixel(x, y)[0]);
+                if elevation <= LAND_COLOR{
+                    continue
+                }
+                elevation_value.apply_value(elevation);
+                moisture_value.apply_value(moisture);
+                temperature_value.apply_value(temperature);
+            }
+        }
+        elevation_value.calculate_average();
+        moisture_value.calculate_average();
+        temperature_value.calculate_average();
+        (elevation_value, moisture_value, temperature_value)
     }
     fn to_image(&self, width: u32) -> im::RgbImage{
         let mut image = im::RgbImage::new(width, self.len() as u32/width);
@@ -190,10 +249,10 @@ pub fn collect_terrain_types() -> Vec<Terrain>{
         Terrain::Jungle,
         Terrain::Drylands,
         Terrain::Desert,
-        Terrain::Oasis,
-        Terrain::Floodplains,
+        //Terrain::Oasis,
+        //Terrain::Floodplains,
         Terrain::Plains,
-        Terrain::Farmlands,
+        //Terrain::Farmlands,
         Terrain::Forest,
         Terrain::Wetlands,
         Terrain::Steppe,

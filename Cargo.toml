@@ -8,4 +8,5 @@ edition = "2018"
 [dependencies]
 image = "*"
 rand = "*"
-noise = { git = "https://github.com/Razaekel/noise-rs", rev = "20f71e1" }
+noise = { git = "https://github.com/Razaekel/noise-rs"}
+itertools = "*"
